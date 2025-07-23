@@ -121,13 +121,13 @@ func collectConfigTypes(decls map[string]*decl, comments comment.Maps) map[strin
 	return configs
 }
 
-func do(packageName string, w io.Writer) error {
+func collectConfigTypesInPackages(packageName string) (map[string]*configType, error) {
 	p, err := packages.Load(&packages.Config{
 		Mode: packages.NeedName | packages.NeedSyntax | packages.NeedTypes,
 		Dir:  packageName,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to load packages: %w", err)
+		return nil, fmt.Errorf("failed to load packages: %w", err)
 	}
 
 	configs := map[string]*configType{}
@@ -140,6 +140,10 @@ func do(packageName string, w io.Writer) error {
 		maps.Copy(configs, configInPkg)
 	}
 
+	return configs, nil
+}
+
+func writeMarkdown(w io.Writer, configs map[string]*configType) error {
 	sortedEntries := slices.SortedFunc(entries(maps.All(configs)), func(a, b *entry[string, *configType]) int {
 		return strings.Compare(a.Key, b.Key)
 	})
@@ -195,19 +199,23 @@ func do(packageName string, w io.Writer) error {
 }
 
 func main() {
-	if err := NewCommand().Execute(); err != nil {
+	if err := newCommand().Execute(); err != nil {
 		log.Fatalf("failed to execute command: %v", err)
 	}
 }
 
-func NewCommand() *cobra.Command {
+func newCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Generate configuration documentation from Go source code",
 		Long:  `This command generates markdown documentation for configuration structures annotated with envconfig tags.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return do(args[0], cmd.OutOrStdout())
+			configs, err := collectConfigTypesInPackages(args[0])
+			if err != nil {
+				return err
+			}
+			return writeMarkdown(cmd.OutOrStdout(), configs)
 		},
 	}
 	return cmd
