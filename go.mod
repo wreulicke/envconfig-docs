@@ -6,6 +6,7 @@ require github.com/spf13/cobra v1.9.1
 
 require (
 	github.com/fatih/color v1.15.0 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/olekukonko/errors v0.0.0-20250405072817-4e6d85265da6 // indirect

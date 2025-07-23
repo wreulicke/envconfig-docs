@@ -121,18 +121,17 @@ func collectConfigTypes(decls map[string]*decl, comments comment.Maps) map[strin
 	return configs
 }
 
-func collectConfigTypesInPackages(packageName string) (map[string]*configType, error) {
-	p, err := packages.Load(&packages.Config{
+func loadPackages(packageName string) ([]*packages.Package, error) {
+	return packages.Load(&packages.Config{
 		Mode: packages.NeedName | packages.NeedSyntax | packages.NeedTypes,
 		Dir:  packageName,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to load packages: %w", err)
-	}
+}
 
+func collectConfigTypesFromPackages(pkgs []*packages.Package) map[string]*configType {
 	configs := map[string]*configType{}
 
-	for _, pkg := range p {
+	for _, pkg := range pkgs {
 		decls := collectDecls(pkg.Syntax)
 		comment := comment.New(pkg.Fset, pkg.Syntax)
 
@@ -140,7 +139,7 @@ func collectConfigTypesInPackages(packageName string) (map[string]*configType, e
 		maps.Copy(configs, configInPkg)
 	}
 
-	return configs, nil
+	return configs
 }
 
 func writeMarkdown(w io.Writer, configs map[string]*configType) error {
@@ -211,10 +210,11 @@ func newCommand() *cobra.Command {
 		Long:  `This command generates markdown documentation for configuration structures annotated with envconfig tags.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			configs, err := collectConfigTypesInPackages(args[0])
+			pkgs, err := loadPackages(args[0])
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to load packages: %w", err)
 			}
+			configs := collectConfigTypesFromPackages(pkgs)
 			return writeMarkdown(cmd.OutOrStdout(), configs)
 		},
 	}
