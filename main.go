@@ -19,14 +19,6 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-type TestConfig struct {
-	PGDatabase string `envconfig:"PGDATABASE" required:"true"`
-	PGHost     string `envconfig:"PGHOST" default:"localhost"`
-	PGPort     int    `envconfig:"PGPORT" default:"15432"`
-	PGUser     string `envconfig:"PGUSER" required:"true"`
-	PGPassword string `envconfig:"PGPASSWORD" required:"true"`
-}
-
 type configType struct {
 	Keys     []*configKey
 	Comments []*ast.CommentGroup
